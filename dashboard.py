@@ -362,7 +362,7 @@ todas_fechas = [parse_fecha(e.get("timestamp", "")) for e in emails]
 todas_fechas = [f for f in todas_fechas if f]
 fecha_min = min(todas_fechas) if todas_fechas else date.today() - timedelta(days=7)
 fecha_max = max(todas_fechas) if todas_fechas else date.today()
-default_inicio = date.today() - timedelta(days=7)
+default_inicio = date.today() - timedelta(days=1)  # Ayer
 default_fin = date.today()
 # Asegurar que min_value no sea mayor que default_inicio
 fecha_min_safe = min(fecha_min, default_inicio)

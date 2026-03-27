@@ -103,14 +103,20 @@ def _handle_cron(event):
     if action == "resumen_diario":
         return _handle_resumen_diario()
 
-    # Cron normal: clasificar emails
-    logger.info("Cron: clasificando emails de Redmine")
+    # Cron diario: clasificar emails no leidos + enviar resumen
+    logger.info("Cron diario: clasificando emails de Redmine + resumen")
+
+    # Paso 1: Clasificar emails no leidos
     emails = get_recent_messages(
-        max_results=30,
+        max_results=50,
         query="from:@mgpsa.com subject:(#) is:unread"
     )
     procesados = _procesar_emails(emails)
-    return _ok({"procesados": procesados, "total": len(emails), "trigger": "cron"})
+
+    # Paso 2: Enviar resumen a Marta
+    _handle_resumen_diario()
+
+    return _ok({"procesados": procesados, "total": len(emails), "trigger": "cron_diario"})
 
 
 def _handle_resumen_diario():
@@ -137,7 +143,15 @@ def _procesar_emails(emails: list[dict]) -> int:
     """
     procesados = 0
 
+    # Obtener IDs ya procesados para evitar duplicados y gastos innecesarios en Bedrock
+    from dynamodb_client import email_ya_procesado
+
     for email_data in emails:
+        # Saltar si ya fue procesado
+        if email_ya_procesado(email_data["email_id"]):
+            logger.info(f"Saltando (ya procesado): [{email_data['email_id']}] {email_data['asunto'][:40]}")
+            continue
+
         logger.info(f"Procesando: [{email_data['email_id']}] {email_data['asunto'][:60]}")
 
         # 1. Clasificar con Bedrock

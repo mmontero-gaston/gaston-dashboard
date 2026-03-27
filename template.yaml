@@ -94,23 +94,15 @@ Resources:
             Path: /gaston/resumen
             Method: get
             RestApiId: !Ref GastonApi
-        # Cron cada 10 minutos
-        GastonCron:
-          Type: Schedule
-          Properties:
-            Schedule: rate(10 minutes)
-            Name: gaston_cron_clasificador
-            Description: Gaston clasifica emails de Redmine cada 10 min
-            Enabled: true
-        # Cron resumen diario 8 AM (UTC+1 = 7 AM UTC)
-        GastonResumenDiario:
+        # Cron diario 8 AM CET (7 AM UTC): clasifica emails + envia resumen a Telegram
+        GastonCronDiario:
           Type: Schedule
           Properties:
             Schedule: cron(0 7 * * ? *)
-            Name: gaston_cron_resumen_diario
-            Description: Gaston envia resumen diario a Telegram a las 8 AM CET
+            Name: gaston_cron_diario
+            Description: Gaston clasifica emails y envia resumen a Telegram a las 8 AM CET
             Enabled: true
-            Input: '{"detail-type": "Scheduled Event", "source": "aws.events", "action": "resumen_diario"}'
+            Input: '{"detail-type": "Scheduled Event", "source": "aws.events", "action": "clasificar_y_resumir"}'
 
   # ============= API GATEWAY =============
   GastonApi:

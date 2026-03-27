@@ -73,6 +73,20 @@ def guardar_email(email_data: dict, clasificacion: dict) -> bool:
         return False
 
 
+def email_ya_procesado(email_id: str) -> bool:
+    """Verifica si un email ya fue procesado. Evita duplicados y gasto en Bedrock."""
+    try:
+        response = table.query(
+            KeyConditionExpression="email_id = :eid",
+            ExpressionAttributeValues={":eid": email_id},
+            Limit=1
+        )
+        return len(response.get("Items", [])) > 0
+    except Exception as e:
+        logger.error(f"Error verificando duplicado {email_id}: {e}")
+        return False
+
+
 def actualizar_accion(email_id: str, timestamp: str, accion: str,
                       draft_id: str = "") -> bool:
     """Actualiza la accion realizada sobre un email."""
