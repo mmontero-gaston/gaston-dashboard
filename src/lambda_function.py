@@ -230,7 +230,7 @@ def _procesar_emails(emails: list[dict]) -> int:
 def _handle_telegram(event):
     """
     Marta escribe en Telegram, Gaston responde con contexto de
-    DynamoDB (emails clasificados) + Redmine (detalle de incidencias).
+    DynamoDB (emails clasificados).
     """
     body = json.loads(event.get("body", "{}"))
     message = body.get("message", {})
@@ -244,17 +244,42 @@ def _handle_telegram(event):
     if text.strip() == "/start":
         send_message(chat_id,
             "Hola! Soy *Gaston*, tu asistente de incidencias.\n\n"
-            "Puedes preguntarme cosas como:\n"
+            "Comandos:\n"
+            "/actualizar - Procesa emails nuevos ahora\n"
+            "/resumen - Resumen de las ultimas 24h\n\n"
+            "O preguntame lo que quieras:\n"
             "- Que incidencias urgentes hay?\n"
-            "- Resumen de hoy\n"
             "- Que dice la #63475?\n"
-            "- Cuantas incidencias tiene SHEREKHAN?\n"
-            "- Que tengo pendiente?\n\n"
+            "- Cuantas incidencias tiene SHEREKHAN?\n\n"
             "_Escribeme lo que necesites._"
         )
         return _ok()
 
-    # Contexto de emails recientes de DynamoDB
+    # Comando /actualizar - procesa emails en el momento
+    if text.strip() == "/actualizar":
+        send_message(chat_id, "Procesando emails nuevos... dame un momento.")
+        emails = get_recent_messages(
+            max_results=50,
+            query="from:@mgpsa.com subject:(#) is:unread"
+        )
+        if not emails:
+            send_message(chat_id, "No hay emails nuevos de Redmine sin leer.")
+            return _ok()
+
+        procesados = _procesar_emails(emails)
+        send_message(chat_id,
+            f"Listo! Procesados *{procesados}* emails nuevos de {len(emails)} encontrados.\n"
+            f"Revisa tu Gmail y el dashboard para ver los detalles."
+        )
+        return _ok()
+
+    # Comando /resumen - resumen de las ultimas 24h
+    if text.strip() == "/resumen":
+        emails_24h = resumen_ultimas_24h()
+        enviar_resumen_diario(chat_id, emails_24h)
+        return _ok()
+
+    # Pregunta libre - Gaston responde con contexto de DynamoDB
     emails_recientes = resumen_ultimas_24h()
     contexto_emails = "\n".join([
         f"- [{e.get('clasificacion')}] #{e.get('numero_incidencia', 'N/A')} "
@@ -262,7 +287,6 @@ def _handle_telegram(event):
         for e in emails_recientes[:20]
     ])
 
-    # Generar respuesta con todo el contexto
     respuesta = responder_pregunta(text, contexto_emails)
     send_message(chat_id, respuesta)
 
