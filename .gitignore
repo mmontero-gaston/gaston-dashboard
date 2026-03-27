@@ -1,0 +1,5 @@
+.env
+setup/token.json
+setup/credentials.json
+__pycache__/
+.aws-sam/

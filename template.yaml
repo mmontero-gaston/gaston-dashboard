@@ -1,0 +1,152 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Gaston - Agente de gestion de incidencias Redmine via Gmail para Marta
+
+Globals:
+  Function:
+    Timeout: 120
+    Runtime: python3.10
+    MemorySize: 256
+
+Parameters:
+  Environment:
+    Type: String
+    Default: prod
+    AllowedValues: [dev, prod]
+  TelegramToken:
+    Type: String
+    Default: ""
+    Description: Token del bot de Telegram de Gaston
+    NoEcho: true
+  MartaChatId:
+    Type: String
+    Default: ""
+    Description: Chat ID de Marta en Telegram
+
+Resources:
+
+  # DynamoDB table "gaston_emails" ya creada manualmente (no gestionar aqui)
+
+  # ============= LAMBDA PRINCIPAL =============
+  GastonFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: gaston_handler
+      Handler: lambda_function.lambda_handler
+      CodeUri: src/
+      Layers:
+        - !Ref GastonGoogleLayer
+      Environment:
+        Variables:
+          TABLE_NAME: gaston_emails
+          SECRET_NAME: gaston/gmail/oauth-credentials
+          BEDROCK_REGION: eu-west-1
+          GASTON_TELEGRAM_TOKEN: !Ref TelegramToken
+          GASTON_MARTA_CHAT_ID: !Ref MartaChatId
+      Policies:
+        # DynamoDB
+        - DynamoDBCrudPolicy:
+            TableName: gaston_emails
+        # Secrets Manager
+        - Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource: !Sub arn:aws:secretsmanager:eu-west-1:${AWS::AccountId}:secret:gaston/gmail/oauth-credentials*
+        # Bedrock
+        - Statement:
+            - Effect: Allow
+              Action:
+                - bedrock:InvokeModel
+              Resource: "*"
+        # Marketplace (cross-region inference)
+        - Statement:
+            - Effect: Allow
+              Action:
+                - aws-marketplace:ViewSubscriptions
+                - aws-marketplace:Subscribe
+              Resource: "*"
+      Events:
+        # Webhook de Gmail Pub/Sub
+        GmailWebhook:
+          Type: Api
+          Properties:
+            Path: /gaston/webhook
+            Method: post
+            RestApiId: !Ref GastonApi
+        # Webhook de Telegram
+        TelegramWebhook:
+          Type: Api
+          Properties:
+            Path: /gaston/telegram
+            Method: post
+            RestApiId: !Ref GastonApi
+        # API para dashboard
+        DashboardEmails:
+          Type: Api
+          Properties:
+            Path: /gaston/emails
+            Method: get
+            RestApiId: !Ref GastonApi
+        DashboardResumen:
+          Type: Api
+          Properties:
+            Path: /gaston/resumen
+            Method: get
+            RestApiId: !Ref GastonApi
+        # Cron cada 10 minutos
+        GastonCron:
+          Type: Schedule
+          Properties:
+            Schedule: rate(10 minutes)
+            Name: gaston_cron_clasificador
+            Description: Gaston clasifica emails de Redmine cada 10 min
+            Enabled: true
+        # Cron resumen diario 8 AM (UTC+1 = 7 AM UTC)
+        GastonResumenDiario:
+          Type: Schedule
+          Properties:
+            Schedule: cron(0 7 * * ? *)
+            Name: gaston_cron_resumen_diario
+            Description: Gaston envia resumen diario a Telegram a las 8 AM CET
+            Enabled: true
+            Input: '{"detail-type": "Scheduled Event", "source": "aws.events", "action": "resumen_diario"}'
+
+  # ============= API GATEWAY =============
+  GastonApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub gaston_api_${Environment}
+      StageName: !Ref Environment
+      Cors:
+        AllowMethods: "'GET,POST,OPTIONS'"
+        AllowHeaders: "'Content-Type'"
+        AllowOrigin: "'*'"
+
+  # ============= LAMBDA LAYER =============
+  GastonGoogleLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: gaston_google_libs
+      ContentUri: layers/google/
+      CompatibleRuntimes:
+        - python3.10
+    Metadata:
+      BuildMethod: python3.10
+
+Outputs:
+  WebhookUrl:
+    Description: URL del webhook para Gmail Pub/Sub
+    Value: !Sub https://${GastonApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/gaston/webhook
+  TelegramWebhookUrl:
+    Description: URL del webhook para Telegram
+    Value: !Sub https://${GastonApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/gaston/telegram
+  ApiBaseUrl:
+    Description: URL base de la API para el dashboard
+    Value: !Sub https://${GastonApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/gaston
+  FunctionArn:
+    Description: ARN de la Lambda de Gaston
+    Value: !GetAtt GastonFunction.Arn
+  TableName:
+    Description: Nombre de la tabla DynamoDB
+    Value: gaston_emails

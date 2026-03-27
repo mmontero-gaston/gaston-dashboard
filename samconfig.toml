@@ -1,0 +1,10 @@
+version = 0.1
+
+[default.deploy.parameters]
+stack_name = "gaston-stack"
+resolve_s3 = true
+s3_prefix = "gaston"
+region = "eu-west-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "Environment=\"prod\" TelegramToken=\"8241884145:AAHxO2JrmZIzkTrJLU4RTHbEYxe1CkA7XG0\" MartaChatId=\"7215433143\""
