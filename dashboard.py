@@ -16,7 +16,16 @@ LOGO_PATH = os.path.join(os.path.dirname(__file__), "Gaston.png")
 # ============= AWS =============
 @st.cache_resource
 def get_table():
-    dynamodb = boto3.resource("dynamodb", region_name=REGION)
+    # Si hay secrets de Streamlit Cloud, usarlos
+    if hasattr(st, "secrets") and "aws" in st.secrets:
+        session = boto3.Session(
+            aws_access_key_id=st.secrets["aws"]["AWS_ACCESS_KEY_ID"],
+            aws_secret_access_key=st.secrets["aws"]["AWS_SECRET_ACCESS_KEY"],
+            region_name=st.secrets["aws"].get("AWS_DEFAULT_REGION", REGION)
+        )
+        dynamodb = session.resource("dynamodb", region_name=REGION)
+    else:
+        dynamodb = boto3.resource("dynamodb", region_name=REGION)
     return dynamodb.Table(TABLE_NAME)
 
 
