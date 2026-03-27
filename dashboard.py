@@ -17,7 +17,11 @@ LOGO_PATH = os.path.join(os.path.dirname(__file__), "Gaston.png")
 @st.cache_resource
 def get_table():
     # Si hay secrets de Streamlit Cloud, usarlos
-    if hasattr(st, "secrets") and "aws" in st.secrets:
+    try:
+        has_secrets = "aws" in st.secrets
+    except Exception:
+        has_secrets = False
+    if has_secrets:
         session = boto3.Session(
             aws_access_key_id=st.secrets["aws"]["AWS_ACCESS_KEY_ID"],
             aws_secret_access_key=st.secrets["aws"]["AWS_SECRET_ACCESS_KEY"],
