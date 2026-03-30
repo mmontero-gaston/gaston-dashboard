@@ -103,13 +103,13 @@ def _handle_cron(event):
     if action == "resumen_diario":
         return _handle_resumen_diario()
 
-    # Cron diario: clasificar emails no leidos + enviar resumen
-    logger.info("Cron diario: clasificando emails de Redmine + resumen")
+    # Cron diario: clasificar emails no leidos de las ultimas 24h + enviar resumen
+    logger.info("Cron diario: clasificando emails de Redmine (ultimas 24h) + resumen")
 
-    # Paso 1: Clasificar emails no leidos
+    # Paso 1: Clasificar emails no leidos de las ultimas 24h
     emails = get_recent_messages(
         max_results=50,
-        query="from:@mgpsa.com subject:(#) is:unread after:2026/03/30"
+        query="from:@mgpsa.com subject:(#) is:unread newer_than:1d"
     )
     procesados = _procesar_emails(emails)
 
@@ -218,12 +218,12 @@ def _handle_telegram(event):
         )
         return _ok()
 
-    # Comando /actualizar - procesa emails en el momento
+    # Comando /actualizar - procesa emails desde la ultima actualizacion
     if text.strip() == "/actualizar":
         send_message(chat_id, "Procesando emails nuevos... dame un momento.")
         emails = get_recent_messages(
             max_results=50,
-            query="from:@mgpsa.com subject:(#) is:unread after:2026/03/30"
+            query="from:@mgpsa.com subject:(#) is:unread newer_than:1d"
         )
         if not emails:
             send_message(chat_id, "No hay emails nuevos de Redmine sin leer.")
