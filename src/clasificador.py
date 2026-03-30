@@ -31,64 +31,49 @@ ESTADOS DE INCIDENCIAS (del asunto del email):
 
 REGLAS DE CLASIFICACION:
 
-INFORMATIVO (mover a carpeta "Redmine No Urgentes", Marta borra en bloque):
-- Cambios de estado automaticos que son solo notificaciones (ej: paso de "En curso" a "Preproduccion")
-- Incidencias donde Marta NO esta en el campo "Para" ni mencionada en el cuerpo
-- Estados "Cerrada" o "Descartada" cuando Marta no es la asignada
-- Actualizaciones de progreso sin preguntas ni peticiones
-- Emails donde Marta esta solo en CC
-- Cualquier email que claramente no requiere accion de Marta
+MUY_URGENTE (no tocar en Gmail, queda en inbox sin leer):
+- Emails con "Subida Produccion" o "Subida Prod" en el asunto
+- Estas son subidas a produccion y requieren atencion inmediata de Marta
 
-URGENTE (queda en inbox + Gaston prepara draft de respuesta + notifica Telegram):
-- Incidencias con prioridad "Alta" o "Urgente" asignadas a Marta o su equipo
-- Estado "En revision" (algo fallo tras resolverse, requiere atencion)
-- Incidencias bloqueantes mencionadas en el cuerpo
-- Emails que explicitamente piden una respuesta urgente
-
-PARA_MARTA (queda en inbox + Gaston prepara draft de respuesta):
+URGENTE (no tocar en Gmail, queda en inbox sin leer):
 - Emails dirigidos a mmontero@mgpsa.com en el campo "Para"
+- Emails donde soporte@mgpsa.com esta en CC o en "Para" PERO el remitente es un trabajador individual (xxx@mgpsa.com que NO sea soporte@ ni tecnologia@)
 - Emails que mencionan a Marta o "mmontero" en el cuerpo
+- Incidencias en estado "En revision" (algo fallo tras resolverse)
 - Incidencias en estado "Resuelta" de SHEREKHAN (Marta debe validar)
-- Emails que hacen una pregunta o piden una decision
-- Estado "Nueva" en proyectos SHEREKHAN (Marta debe estar al tanto)
+- Emails que hacen una pregunta directa o piden una decision
 
-MEDIO (queda en inbox, sin draft, Marta decide):
-- Incidencias relevantes para SHEREKHAN pero que no requieren respuesta directa
-- Cambios de estado importantes (ej: paso a "Preproduccion") en proyectos de Marta
-- Informacion util que Marta deberia saber pero no necesita actuar
-
-DUDOSO (queda en inbox, no se toca):
-- No encaja claramente en ninguna categoria
-- Emails de proyectos que no son SHEREKHAN/Smee/Negocio
-- Contenido ambiguo o incompleto
+INFORMATIVO (se archivara en carpeta "Redmine No Urgentes", sin marcar como leido):
+- Cambios de estado automaticos que son solo notificaciones
+- Incidencias donde Marta NO esta en "Para" ni mencionada en el cuerpo
+- Estados "Cerrada" o "Descartada"
+- Actualizaciones de progreso sin preguntas ni peticiones
+- Emails donde Marta esta solo en CC y el remitente es automatico (soporte@ o tecnologia@)
+- Cualquier email de Redmine que claramente no requiere accion de Marta
 
 IMPORTANTE: Responde SOLO con un objeto JSON valido, sin texto adicional."""
 
 USER_PROMPT = """Analiza este email de Redmine y extrae la informacion:
 
-1. clasificacion: INFORMATIVO | URGENTE | PARA_MARTA | MEDIO | DUDOSO
+1. clasificacion: MUY_URGENTE | URGENTE | INFORMATIVO
 2. proyecto: nombre del proyecto en Redmine (si aparece)
 3. numero_incidencia: numero de la incidencia (#XXXX) si aparece
-4. prioridad_redmine: la prioridad que indica Redmine (Alta, Normal, Baja, Urgente) si aparece
-5. asignado_a: a quien esta asignada la incidencia si aparece
-6. remitente_tipo: SISTEMA_AUTOMATICO | PERSONA
+4. estado_redmine: el estado que aparece en el asunto (Nueva, En curso, Preproduccion, En revision, Resuelta, Cerrada, Descartada)
+5. prioridad_redmine: la prioridad que indica Redmine (Alta, Normal, Baja, Urgente) si aparece
+6. asignado_a: a quien esta asignada la incidencia si aparece
 7. resumen: resumen en 1 frase de que trata
 8. motivo_clasificacion: por que elegiste esa clasificacion (1 frase)
-9. requiere_respuesta: true si el email espera una respuesta de Marta
-10. draft_sugerido: si requiere_respuesta es true, sugiere un texto breve de respuesta
 
 Responde SOLO con este JSON:
 {{
   "clasificacion": "...",
   "proyecto": "...",
   "numero_incidencia": "...",
+  "estado_redmine": "...",
   "prioridad_redmine": "...",
   "asignado_a": "...",
-  "remitente_tipo": "...",
   "resumen": "...",
-  "motivo_clasificacion": "...",
-  "requiere_respuesta": false,
-  "draft_sugerido": ""
+  "motivo_clasificacion": "..."
 }}
 
 EMAIL:
@@ -136,50 +121,7 @@ def clasificar_email(email_data: dict) -> dict:
         return _fallback_error(str(e))
 
 
-def generar_draft(email_data: dict, contexto_redmine: str = "") -> str:
-    """
-    Genera un borrador de respuesta para un email urgente/para Marta.
-    Usa mas contexto y un prompt especifico para redaccion.
-    """
-    try:
-        prompt = f"""Redacta un borrador de respuesta profesional para este email.
-El borrador es para que Marta (jefa del departamento) lo revise y envie.
-Debe ser conciso, profesional y en espanol.
-
-EMAIL ORIGINAL:
-De: {email_data.get('remitente', '')}
-Asunto: {email_data.get('asunto', '')}
-Cuerpo:
-{email_data.get('cuerpo', '')[:2000]}
-
-{f'CONTEXTO ADICIONAL DE REDMINE:{chr(10)}{contexto_redmine}' if contexto_redmine else ''}
-
-Escribe SOLO el texto del borrador, sin saludos tipo "Estimado" generico.
-Usa un tono profesional pero directo. Firma como "Marta"."""
-
-        body = json.dumps({
-            "anthropic_version": "bedrock-2023-05-31",
-            "max_tokens": 800,
-            "system": "Eres un asistente que redacta emails profesionales concisos en espanol.",
-            "messages": [{"role": "user", "content": prompt}]
-        })
-
-        response = bedrock.invoke_model(
-            modelId=MODEL_ID,
-            body=body,
-            contentType="application/json",
-            accept="application/json"
-        )
-
-        result = json.loads(response["body"].read())
-        return result["content"][0]["text"].strip()
-
-    except Exception as e:
-        logger.error(f"Error generando draft: {e}")
-        return ""
-
-
-def responder_pregunta(pregunta: str, contexto_emails: str, contexto_redmine: str = "") -> str:
+def responder_pregunta(pregunta: str, contexto_emails: str) -> str:
     """
     Responde una pregunta de Marta sobre las incidencias.
     Usado por el bot de Telegram.
@@ -191,8 +133,6 @@ PREGUNTA: {pregunta}
 
 CONTEXTO (emails recientes clasificados):
 {contexto_emails[:4000]}
-
-{f'CONTEXTO REDMINE:{chr(10)}{contexto_redmine[:2000]}' if contexto_redmine else ''}
 
 Responde de forma clara y concisa en espanol. Si no tienes informacion
 suficiente para responder, dilo honestamente."""
@@ -235,14 +175,12 @@ def _parse_response(text: str) -> dict:
 
 def _fallback_error(motivo: str) -> dict:
     return {
-        "clasificacion": "DUDOSO",
+        "clasificacion": "INFORMATIVO",
         "proyecto": "N/A",
         "numero_incidencia": "N/A",
+        "estado_redmine": "N/A",
         "prioridad_redmine": "N/A",
         "asignado_a": "N/A",
-        "remitente_tipo": "DESCONOCIDO",
         "resumen": f"Error al clasificar: {motivo[:100]}",
         "motivo_clasificacion": "Error en el procesamiento",
-        "requiere_respuesta": False,
-        "draft_sugerido": ""
     }

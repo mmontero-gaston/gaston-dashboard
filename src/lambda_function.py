@@ -2,8 +2,8 @@ import json
 import base64
 import logging
 import os
-from gmail_client import get_new_messages, get_recent_messages, mover_a_no_urgentes, crear_draft, marcar_como_leido
-from clasificador import clasificar_email, generar_draft, responder_pregunta
+from gmail_client import get_new_messages, get_recent_messages, mover_a_no_urgentes
+from clasificador import clasificar_email, responder_pregunta
 from dynamodb_client import (
     guardar_email, actualizar_accion, resumen_ultimas_24h,
     get_last_history_id, save_history_id, get_todos_emails
@@ -109,7 +109,7 @@ def _handle_cron(event):
     # Paso 1: Clasificar emails no leidos
     emails = get_recent_messages(
         max_results=50,
-        query="from:@mgpsa.com subject:(#) is:unread"
+        query="from:@mgpsa.com subject:(#) is:unread after:2026/03/30"
     )
     procesados = _procesar_emails(emails)
 
@@ -168,56 +168,19 @@ def _procesar_emails(emails: list[dict]) -> int:
 
         # 4. Ejecutar accion segun clasificacion
         #
-        # URGENTE / PARA_MARTA → queda en inbox + draft preparado + notifica Telegram
-        # MEDIO                → queda en inbox, sin draft, Marta decide
-        # INFORMATIVO          → mover a carpeta "Redmine No Urgentes" (Marta borra en bloque)
-        # DUDOSO               → queda en inbox, no se toca
+        # Solo actua sobre emails de Redmine (tienen #XXXXX en el asunto)
+        # INFORMATIVO de Redmine → mover a "Redmine No Urgentes" SIN marcar como leido
+        # Todo lo demas → no tocar Gmail, solo registrar en DynamoDB + dashboard
 
-        # Detectar si es de Redmine (tiene #XXXXX en el asunto)
         import re
         es_redmine = bool(re.search(r"#\d{3,}", email_data.get("asunto", "")))
 
-        if tipo == "INFORMATIVO":
-            if es_redmine:
-                # Solo mover a carpeta "Redmine No Urgentes" si es de Redmine
-                mover_a_no_urgentes(email_data["email_id"])
-                logger.info(f"  -> Movido a 'Redmine No Urgentes'")
-            else:
-                # No es de Redmine, no tocar
-                marcar_como_leido(email_data["email_id"])
-                logger.info(f"  -> Informativo no-Redmine, marcado leido")
-
-        elif tipo in ("URGENTE", "PARA_MARTA"):
-            # Queda en inbox, marcar como leido
-            marcar_como_leido(email_data["email_id"])
-
-            # Generar draft como RESPUESTA al email original (aparece en el hilo)
-            draft_text = generar_draft(email_data)
-            if draft_text:
-                asunto_original = email_data.get("asunto", "")
-                asunto_reply = asunto_original if asunto_original.startswith("Re:") else f"Re: {asunto_original}"
-                draft_id = crear_draft(
-                    destinatario=email_data.get("remitente", ""),
-                    asunto=asunto_reply,
-                    cuerpo=draft_text,
-                    reply_to_id=email_data.get("message_id", ""),
-                    thread_id=email_data.get("thread_id", ""),
-                )
-                if draft_id:
-                    logger.info(f"  -> Draft creado en hilo (NO enviado): {draft_id}")
-
-            # Notificar urgentes a Telegram inmediatamente
-            if tipo == "URGENTE" and MARTA_CHAT_ID:
-                enviar_notificacion_urgente(MARTA_CHAT_ID, email_data, clasificacion)
-
-        elif tipo == "MEDIO":
-            # Queda en inbox, marcar como leido, sin draft
-            marcar_como_leido(email_data["email_id"])
-            logger.info(f"  -> Medio, queda en inbox sin draft")
-
-        elif tipo == "DUDOSO":
-            # Queda en inbox, no se toca
-            logger.info(f"  -> Dudoso, sin accion automatica")
+        if tipo == "INFORMATIVO" and es_redmine:
+            mover_a_no_urgentes(email_data["email_id"])
+            logger.info(f"  -> Redmine informativo: movido a carpeta (sin leer)")
+        else:
+            # No tocar Gmail: queda en inbox sin leer, sin drafts, sin cambios
+            logger.info(f"  -> {tipo}: registrado en dashboard, Gmail intacto")
 
         procesados += 1
 
@@ -260,7 +223,7 @@ def _handle_telegram(event):
         send_message(chat_id, "Procesando emails nuevos... dame un momento.")
         emails = get_recent_messages(
             max_results=50,
-            query="from:@mgpsa.com subject:(#) is:unread"
+            query="from:@mgpsa.com subject:(#) is:unread after:2026/03/30"
         )
         if not emails:
             send_message(chat_id, "No hay emails nuevos de Redmine sin leer.")

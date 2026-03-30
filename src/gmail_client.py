@@ -197,8 +197,8 @@ def _get_or_create_label(label_name: str = LABEL_NO_URGENTES) -> Optional[str]:
 def mover_a_no_urgentes(email_id: str) -> bool:
     """
     Mueve un email a la carpeta 'Redmine No Urgentes'.
-    Lo quita del INBOX y lo marca como leido.
-    Marta puede entrar a esa carpeta, revisar y borrar en bloque.
+    Lo quita del INBOX pero lo mantiene como NO LEIDO.
+    Marta puede entrar a esa carpeta, ver cuales ha revisado y borrar en bloque.
     """
     label_id = _get_or_create_label()
     if not label_id:
@@ -211,7 +211,7 @@ def mover_a_no_urgentes(email_id: str) -> bool:
             id=email_id,
             body={
                 "addLabelIds": [label_id],
-                "removeLabelIds": ["INBOX", "UNREAD"]
+                "removeLabelIds": ["INBOX"]
             }
         ).execute()
         logger.info(f"Movido a '{LABEL_NO_URGENTES}': {email_id}")
