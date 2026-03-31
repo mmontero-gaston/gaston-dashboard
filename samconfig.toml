@@ -7,4 +7,4 @@ s3_prefix = "gaston"
 region = "eu-west-1"
 confirm_changeset = true
 capabilities = "CAPABILITY_IAM"
-parameter_overrides = "Environment=\"prod\" TelegramToken=\"8241884145:AAHxO2JrmZIzkTrJLU4RTHbEYxe1CkA7XG0\" MartaChatId=\"7215433143\""
+parameter_overrides = "Environment=\"prod\" TelegramToken=\"8241884145:AAHxO2JrmZIzkTrJLU4RTHbEYxe1CkA7XG0\" MartaChatId=\"7215433143\" TrelloApiKey=\"53a7fe35d020d52b1a2121f283cef904\" TrelloToken=\"ATTA7db71f9b79923cd2044c1dd5389b5e75f790f0fb87bae22f57c3a2fa60eed46d0F446D8C\""

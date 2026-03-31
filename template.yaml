@@ -22,6 +22,15 @@ Parameters:
     Type: String
     Default: ""
     Description: Chat ID de Marta en Telegram
+  TrelloApiKey:
+    Type: String
+    Default: ""
+    Description: API Key de Trello
+  TrelloToken:
+    Type: String
+    Default: ""
+    Description: Token de Trello (acceso a tableros de Marta)
+    NoEcho: true
 
 Resources:
 
@@ -43,6 +52,8 @@ Resources:
           BEDROCK_REGION: eu-west-1
           GASTON_TELEGRAM_TOKEN: !Ref TelegramToken
           GASTON_MARTA_CHAT_ID: !Ref MartaChatId
+          GASTON_TRELLO_API_KEY: !Ref TrelloApiKey
+          GASTON_TRELLO_TOKEN: !Ref TrelloToken
       Policies:
         # DynamoDB
         - DynamoDBCrudPolicy:

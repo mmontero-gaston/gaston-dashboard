@@ -207,13 +207,15 @@ def _handle_telegram(event):
     if text.strip() == "/start":
         send_message(chat_id,
             "Hola! Soy *Gaston*, tu asistente de incidencias.\n\n"
-            "Comandos:\n"
+            "*Comandos:*\n"
             "/actualizar - Procesa emails nuevos ahora\n"
             "/resumen - Resumen de las ultimas 24h\n\n"
-            "O preguntame lo que quieras:\n"
-            "- Que incidencias urgentes hay?\n"
-            "- Que dice la #63475?\n"
-            "- Cuantas incidencias tiene SHEREKHAN?\n\n"
+            "*Trello:*\n"
+            "mueve #61873 a Pdte Probar Negocio en PRE\n"
+            "mueve #63643 y #63689 a Probado OK en PRO\n\n"
+            "*Preguntas:*\n"
+            "Que incidencias urgentes hay?\n"
+            "Cuantas incidencias tiene SHEREKHAN?\n\n"
             "_Escribeme lo que necesites._"
         )
         return _ok()
@@ -240,6 +242,15 @@ def _handle_telegram(event):
     if text.strip() == "/resumen":
         emails_24h = resumen_ultimas_24h()
         enviar_resumen_diario(chat_id, emails_24h)
+        return _ok()
+
+    # Comando Trello - mover tarjetas (detecta "mueve", "mover", "muéveme", "pasa")
+    import re
+    text_lower = text.lower().strip()
+    if re.search(r"(mueve|mover|muéveme|mueveme|pasa|pasar|mover)\b", text_lower) and re.search(r"#\d+", text):
+        from trello_client import procesar_comando_trello
+        respuesta = procesar_comando_trello(text)
+        send_message(chat_id, respuesta)
         return _ok()
 
     # Pregunta libre - Gaston responde con contexto de DynamoDB
