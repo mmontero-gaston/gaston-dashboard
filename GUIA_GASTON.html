@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gaston - Guia de Usuario</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #fafafa; color: #333; line-height: 1.6; }
+        .container { max-width: 800px; margin: 0 auto; padding: 30px 20px; }
+        .header { background: linear-gradient(135deg, #1a1a1a, #2d2d2d); padding: 30px; border-radius: 16px; color: white; text-align: center; margin-bottom: 30px; border-bottom: 4px solid #FF6A00; }
+        .header h1 { font-size: 32px; margin-bottom: 6px; }
+        .header p { opacity: 0.7; font-size: 14px; }
+        h2 { font-size: 22px; color: #1a1a1a; margin: 30px 0 16px; padding-left: 14px; border-left: 4px solid #FF6A00; }
+        h3 { font-size: 16px; color: #555; margin: 20px 0 10px; }
+        .section { background: white; border-radius: 12px; padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .command { background: #f5f5f5; border-radius: 8px; padding: 14px 18px; margin: 10px 0; border-left: 4px solid #FF6A00; font-family: monospace; font-size: 14px; }
+        .command .label { font-family: 'Segoe UI', sans-serif; font-weight: 700; color: #FF6A00; font-size: 13px; margin-bottom: 4px; display: block; }
+        .command .example { color: #333; }
+        .command .response { color: #888; font-style: italic; margin-top: 6px; }
+        .pill { display: inline-block; padding: 3px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; color: white; }
+        .pill-urgente { background: #dc3545; }
+        .pill-muy { background: #8b0000; }
+        .pill-info { background: #6c757d; }
+        .note { background: #fff8f0; border: 1px solid #FF6A00; border-radius: 8px; padding: 14px 18px; margin: 14px 0; font-size: 14px; }
+        .note strong { color: #FF6A00; }
+        table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+        th { background: #1a1a1a; color: white; padding: 10px 14px; text-align: left; font-size: 13px; }
+        td { padding: 10px 14px; border-bottom: 1px solid #eee; font-size: 14px; }
+        tr:hover td { background: #fafafa; }
+        .footer { text-align: center; color: #bbb; font-size: 12px; margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; }
+        @media print { body { background: white; } .section { box-shadow: none; border: 1px solid #eee; } }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <div class="header">
+        <h1>Gaston</h1>
+        <p>Guia de usuario - Gestor de incidencias Redmine</p>
+    </div>
+
+    <!-- QUE ES -->
+    <h2>Que es Gaston?</h2>
+    <div class="section">
+        <p>Gaston es un asistente que gestiona tu bandeja de Gmail automaticamente. Todos los dias a las <strong>8:00 AM</strong> revisa los emails de Redmine y:</p>
+        <ul style="margin: 12px 0 0 20px;">
+            <li>Los <strong>informativos</strong> los mueve a la carpeta <strong>"Redmine No Urgentes"</strong> (sin marcarlos como leidos)</li>
+            <li>Los <strong>urgentes</strong> los deja en tu bandeja de entrada, intactos</li>
+            <li>Todo queda registrado en el <strong>dashboard</strong></li>
+            <li>Te envia un <strong>resumen por Telegram</strong> cada manana</li>
+        </ul>
+        <div class="note">
+            <strong>Importante:</strong> Gaston nunca envia emails, nunca crea borradores, y nunca marca emails como leidos. Solo mueve los informativos a la carpeta.
+        </div>
+    </div>
+
+    <!-- TELEGRAM -->
+    <h2>Telegram - Comandos</h2>
+    <div class="section">
+
+        <h3>Actualizar emails ahora</h3>
+        <p>Si no quieres esperar a las 8 AM, pidele a Gaston que procese los emails nuevos:</p>
+        <div class="command">
+            <span class="label">Tu escribes:</span>
+            <span class="example">/actualizar</span>
+            <div class="response">Gaston: "Procesando emails nuevos... Listo! Procesados 12 emails nuevos."</div>
+        </div>
+
+        <h3>Ver resumen</h3>
+        <div class="command">
+            <span class="label">Tu escribes:</span>
+            <span class="example">/resumen</span>
+            <div class="response">Gaston: "Buenos dias Marta. Resumen de las ultimas 24h: 23 emails nuevos, 18 archivados, 3 urgentes..."</div>
+        </div>
+
+        <h3>Hacer preguntas</h3>
+        <p>Puedes preguntarle lo que quieras sobre las incidencias:</p>
+        <div class="command">
+            <span class="label">Tu escribes:</span>
+            <span class="example">Que incidencias urgentes hay?</span>
+        </div>
+        <div class="command">
+            <span class="label">Tu escribes:</span>
+            <span class="example">Cuantas incidencias tiene SHEREKHAN hoy?</span>
+        </div>
+        <div class="command">
+            <span class="label">Tu escribes:</span>
+            <span class="example">Que paso con la #63475?</span>
+        </div>
+    </div>
+
+    <!-- TRELLO -->
+    <h2>Telegram - Mover tarjetas en Trello</h2>
+    <div class="section">
+        <p>Puedes pedirle a Gaston que mueva tarjetas de Trello. Usa el numero de incidencia con <strong>#</strong>:</p>
+
+        <h3>Mover una tarjeta</h3>
+        <div class="command">
+            <span class="label">Tu escribes:</span>
+            <span class="example">mueve #61873 a Pdte Probar Negocio en PRE</span>
+            <div class="response">Gaston: "Movidas: #61873 -> PDTE PROBAR NEGOCIO (SHERE KHAN - PRE)"</div>
+        </div>
+
+        <h3>Mover varias tarjetas a la vez</h3>
+        <div class="command">
+            <span class="label">Tu escribes:</span>
+            <span class="example">mueve #63643 y #63689 a Probado OK en PRO</span>
+            <div class="response">Gaston: "Movidas: #63643 -> PROBADO OK, #63689 -> PROBADO OK"</div>
+        </div>
+
+        <h3>Mover con fecha</h3>
+        <div class="command">
+            <span class="label">Tu escribes:</span>
+            <span class="example">mueve #48693 a Pdte Probar Negocio en PRE con fecha 31 de marzo</span>
+            <div class="response">Gaston mueve la tarjeta y anade un comentario con la fecha.</div>
+        </div>
+
+        <h3>Otras formas de pedirlo</h3>
+        <div class="command">
+            <span class="example">pasa #62311 a Pendientes Envio en NEGOCIO</span>
+        </div>
+        <div class="command">
+            <span class="example">lleva #61873 a Subida Back en PRE</span>
+        </div>
+        <div class="command">
+            <span class="example">pon #63475 en Probado KO en PRO</span>
+        </div>
+
+        <div class="note">
+            <strong>Consejo:</strong> Siempre incluye el <strong>#</strong> antes del numero de incidencia, el <strong>nombre de la lista</strong> (o parte del nombre), y el <strong>tablero</strong> (PRE, PRO o NEGOCIO).
+        </div>
+
+        <h3>Listas disponibles</h3>
+
+        <p><strong>SHERE KHAN - PRE</strong></p>
+        <table>
+            <tr><th>Lista</th><th>Como escribirlo</th></tr>
+            <tr><td>BACKLOG - NUEVAS FUNCIONALIDADES</td><td>Backlog Nuevas</td></tr>
+            <tr><td>BACKLOG - ERRORES & MEJORAS</td><td>Backlog Errores</td></tr>
+            <tr><td>En proceso CRIS</td><td>En proceso Cris</td></tr>
+            <tr><td>En proceso SALVA</td><td>En proceso Salva</td></tr>
+            <tr><td>En proceso LUCAS</td><td>En proceso Lucas</td></tr>
+            <tr><td>En proceso GUMER</td><td>En proceso Gumer</td></tr>
+            <tr><td>En proceso PAOLA</td><td>En proceso Paola</td></tr>
+            <tr><td>En proceso BORJA</td><td>En proceso Borja</td></tr>
+            <tr><td>En proceso SARA</td><td>En proceso Sara</td></tr>
+            <tr><td>PDNTE SUBIDA BACK</td><td>Subida Back o Pdte Subida Back</td></tr>
+            <tr><td>PNDTE SUBIDA FRONT</td><td>Subida Front o Pdte Subida Front</td></tr>
+            <tr><td>PNDTE PROBAR NEGOCIO</td><td>Probar Negocio o Pdte Probar Negocio</td></tr>
+            <tr><td>PROBADO CON ERRORES</td><td>Probado con Errores o Con Errores</td></tr>
+        </table>
+
+        <p><strong>SHERE KHAN - PRO</strong></p>
+        <table>
+            <tr><th>Lista</th><th>Como escribirlo</th></tr>
+            <tr><td>PNDTE SUBIDA WENDY / PIOLIN BACK PRO</td><td>Pdte Subida Back</td></tr>
+            <tr><td>PENDIENTE SUBIDA FRONT</td><td>Pdte Subida Front</td></tr>
+            <tr><td>PENDIENTE PRUEBAS NEGOCIO</td><td>Pruebas Negocio</td></tr>
+            <tr><td>PROBADO KO</td><td>Probado KO o KO</td></tr>
+            <tr><td>PROBADO OK</td><td>Probado OK o OK</td></tr>
+        </table>
+
+        <p><strong>SHERE KHAN - NEGOCIO</strong></p>
+        <table>
+            <tr><th>Lista</th><th>Como escribirlo</th></tr>
+            <tr><td>Pendientes CAMILO</td><td>Pendientes Camilo</td></tr>
+            <tr><td>Pendientes GENERAL</td><td>Pendientes General</td></tr>
+            <tr><td>Pendientes LOGIN</td><td>Pendientes Login</td></tr>
+            <tr><td>Pendientes EMISOR</td><td>Pendientes Emisor</td></tr>
+            <tr><td>Pendientes BENEFICIARIO</td><td>Pendientes Beneficiario</td></tr>
+            <tr><td>Pendientes ENVIO</td><td>Pendientes Envio</td></tr>
+            <tr><td>Pendientes ACTIVIDAD</td><td>Pendientes Actividad</td></tr>
+            <tr><td>Pendientes CAJA CHICA</td><td>Pendientes Caja Chica</td></tr>
+            <tr><td>Pendientes PRECIOS</td><td>Pendientes Precios</td></tr>
+            <tr><td>Pendientes CONFIGURACION</td><td>Pendientes Configuracion</td></tr>
+            <tr><td>Pendientes DOCUMENTACION</td><td>Pendientes Documentacion</td></tr>
+            <tr><td>Pendientes USUARIO</td><td>Pendientes Usuario</td></tr>
+            <tr><td>Incidencias abandonadas</td><td>Abandonada</td></tr>
+            <tr><td>Incidencias en DUDA</td><td>Duda</td></tr>
+        </table>
+    </div>
+
+    <!-- GMAIL -->
+    <h2>Gmail - Que hace Gaston?</h2>
+    <div class="section">
+        <table>
+            <tr><th>Tipo de email</th><th>Que hace Gaston</th></tr>
+            <tr>
+                <td><span class="pill pill-muy">MUY URGENTE</span><br>"Subida Produccion" en el asunto</td>
+                <td>No toca nada. Queda en tu bandeja, sin leer.</td>
+            </tr>
+            <tr>
+                <td><span class="pill pill-urgente">URGENTE</span><br>Dirigido a ti, o con pregunta directa</td>
+                <td>No toca nada. Queda en tu bandeja, sin leer.</td>
+            </tr>
+            <tr>
+                <td><span class="pill pill-info">INFORMATIVO</span><br>Notificaciones automaticas, cambios de estado</td>
+                <td>Lo mueve a la carpeta <strong>"Redmine No Urgentes"</strong> sin marcar como leido.</td>
+            </tr>
+        </table>
+        <div class="note">
+            <strong>Carpeta "Redmine No Urgentes":</strong> Revisa esta carpeta cuando quieras. Los emails estan sin leer para que puedas ver cuales has revisado. Cuando quieras, selecciona todos y borralos en bloque.
+        </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <h2>Dashboard</h2>
+    <div class="section">
+        <p>El dashboard muestra todas las incidencias clasificadas por Gaston. Se actualiza automaticamente.</p>
+        <p>Tiene 4 vistas:</p>
+        <ul style="margin: 12px 0 0 20px;">
+            <li><strong>Dashboard</strong> — Resumen general con metricas, graficos y ultimos emails</li>
+            <li><strong>Por Proyecto</strong> — Filtra incidencias por proyecto (SHEREKHAN, Smee, etc.)</li>
+            <li><strong>Atencion Marta</strong> — Solo los urgentes y los que requieren tu atencion</li>
+            <li><strong>Todos los emails</strong> — Tabla completa con filtros y busqueda</li>
+        </ul>
+    </div>
+
+    <!-- RESUMEN RAPIDO -->
+    <h2>Resumen rapido</h2>
+    <div class="section">
+        <table>
+            <tr><th>Quiero...</th><th>Escribo en Telegram...</th></tr>
+            <tr><td>Procesar emails nuevos ahora</td><td><code>/actualizar</code></td></tr>
+            <tr><td>Ver resumen del dia</td><td><code>/resumen</code></td></tr>
+            <tr><td>Saber que urgentes hay</td><td><code>Que incidencias urgentes hay?</code></td></tr>
+            <tr><td>Mover tarjeta en Trello</td><td><code>mueve #XXXXX a [lista] en [PRE/PRO/NEGOCIO]</code></td></tr>
+            <tr><td>Mover varias tarjetas</td><td><code>mueve #XXXXX y #YYYYY a [lista] en [tablero]</code></td></tr>
+            <tr><td>Saber de una incidencia</td><td><code>Que paso con la #63475?</code></td></tr>
+            <tr><td>Ver opciones</td><td><code>/start</code></td></tr>
+        </table>
+    </div>
+
+    <div class="footer">
+        Gaston v2.0 - Gestor de incidencias Redmine - 2026
+    </div>
+
+</div>
+</body>
+</html>
