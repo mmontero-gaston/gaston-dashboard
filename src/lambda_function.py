@@ -289,6 +289,15 @@ def _handle_api(event):
         emails = resumen_ultimas_24h()
         return _ok(emails)
 
+    elif path == "/gaston/actualizar" and method == "POST":
+        # Marta pide actualizar desde el dashboard
+        emails = get_recent_messages(
+            max_results=50,
+            query="from:@mgpsa.com subject:(#) is:unread newer_than:1d"
+        )
+        procesados = _procesar_emails(emails)
+        return _ok({"procesados": procesados, "total": len(emails)})
+
     return _ok({"message": "Ruta no encontrada"})
 
 

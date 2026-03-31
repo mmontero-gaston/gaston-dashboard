@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gaston - Gestor de Incidencias</title>
+<link rel="icon" type="image/png" href="gaston.png">
+<style>
+:root {
+    --orange: #FF6A00;
+    --dark: #1a1a1a;
+    --gray-bg: #f5f5f7;
+    --white: #ffffff;
+    --text: #333;
+    --text-light: #888;
+    --red: #dc3545;
+    --darkred: #8b0000;
+    --green: #28a745;
+    --amber: #ffc107;
+    --blue: #4a9eff;
+    --gray: #6c757d;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Segoe UI',Tahoma,sans-serif; background:var(--gray-bg); color:var(--text); }
+
+/* SIDEBAR */
+.sidebar {
+    position:fixed; left:0; top:0; bottom:0; width:240px;
+    background:var(--dark); padding:20px 0; overflow-y:auto; z-index:10;
+}
+.sidebar-logo { text-align:center; padding:16px 0 24px; }
+.sidebar-logo img { width:70px; height:70px; border-radius:50%; border:3px solid var(--orange); }
+.sidebar-logo h3 { color:var(--orange); margin:8px 0 2px; font-size:18px; }
+.sidebar-logo p { color:#888; font-size:11px; }
+.sidebar-nav { padding:0 12px; }
+.sidebar-nav button {
+    display:block; width:100%; padding:12px 16px; margin:4px 0;
+    background:transparent; border:none; color:#ccc; font-size:14px;
+    text-align:left; border-radius:8px; cursor:pointer; transition:all 0.2s;
+}
+.sidebar-nav button:hover { background:#2d2d2d; color:white; }
+.sidebar-nav button.active { background:var(--orange); color:white; font-weight:600; }
+.sidebar-actions { padding:16px; margin-top:16px; border-top:1px solid #333; }
+.sidebar-actions button {
+    width:100%; padding:10px; background:var(--orange); color:white;
+    border:none; border-radius:8px; font-size:13px; font-weight:600;
+    cursor:pointer; transition:background 0.2s; margin-bottom:8px;
+}
+.sidebar-actions button:hover { background:#e55d00; }
+.sidebar-actions button.secondary { background:#333; }
+.sidebar-actions button.secondary:hover { background:#444; }
+.sidebar-time { color:#666; font-size:11px; text-align:center; padding:8px 0; }
+
+/* MAIN */
+.main { margin-left:240px; padding:24px 32px; min-height:100vh; }
+
+/* HEADER */
+.header {
+    background:linear-gradient(135deg,#1a1a1a 0%,#2d2d2d 50%,var(--orange) 150%);
+    padding:20px 28px; border-radius:14px; color:white;
+    margin-bottom:24px; display:flex; align-items:center; gap:20px;
+    border-bottom:3px solid var(--orange);
+}
+.header img { width:50px; height:50px; border-radius:50%; border:2px solid var(--orange); }
+.header h1 { font-size:24px; font-weight:700; margin:0; }
+.header p { margin:2px 0 0; opacity:0.6; font-size:13px; }
+
+/* METRICS */
+.metrics { display:flex; gap:14px; margin-bottom:24px; flex-wrap:wrap; }
+.metric {
+    flex:1; min-width:140px; background:white; border-radius:12px; padding:18px 22px;
+    border-top:4px solid var(--orange); box-shadow:0 2px 8px rgba(0,0,0,0.06);
+    transition:transform 0.2s;
+}
+.metric:hover { transform:translateY(-2px); }
+.metric .val { font-size:32px; font-weight:800; color:var(--dark); }
+.metric .lbl { font-size:11px; color:var(--text-light); text-transform:uppercase; letter-spacing:0.8px; margin-top:2px; }
+.metric.red { border-top-color:var(--red); }
+.metric.amber { border-top-color:var(--amber); }
+.metric.green { border-top-color:var(--green); }
+.metric.blue { border-top-color:var(--blue); }
+
+/* SECTION TITLE */
+.section-title {
+    font-size:18px; font-weight:700; color:var(--dark);
+    border-left:4px solid var(--orange); padding-left:12px; margin:24px 0 16px;
+}
+
+/* PILLS */
+.pill { display:inline-block; padding:3px 12px; border-radius:20px; font-size:11px; font-weight:700; color:white; }
+.pill-muy { background:var(--darkred); }
+.pill-urgente { background:var(--red); }
+.pill-informativo { background:var(--gray); }
+
+/* ALERT ROWS */
+.alert-row {
+    padding:12px 16px; border-radius:8px; margin-bottom:8px;
+    border-left:4px solid var(--red); background:#fff5f5;
+}
+.alert-row.info { border-left-color:var(--gray); background:#f8f8f8; }
+
+/* TABLE */
+.data-table { width:100%; border-collapse:collapse; background:white; border-radius:10px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.06); }
+.data-table th { background:var(--dark); color:white; padding:10px 14px; text-align:left; font-size:12px; font-weight:600; }
+.data-table td { padding:9px 14px; border-bottom:1px solid #eee; font-size:13px; }
+.data-table tr:hover td { background:#fafafa; }
+
+/* FILTERS */
+.filters { display:flex; gap:12px; margin-bottom:16px; flex-wrap:wrap; align-items:center; }
+.filters select, .filters input {
+    padding:8px 12px; border:1px solid #ddd; border-radius:8px; font-size:13px;
+    outline:none; transition:border 0.2s;
+}
+.filters select:focus, .filters input:focus { border-color:var(--orange); }
+
+/* PROJECT CARDS */
+.inc-card {
+    background:white; border-radius:10px; padding:14px 18px; margin-bottom:10px;
+    box-shadow:0 1px 4px rgba(0,0,0,0.06); border-left:4px solid #ddd;
+}
+.inc-card.urgente { border-left-color:var(--red); }
+.inc-card.muy_urgente { border-left-color:var(--darkred); }
+.inc-card.informativo { border-left-color:var(--gray); }
+.inc-card .inc-num { font-weight:700; font-size:15px; color:var(--dark); }
+.inc-card .inc-resumen { color:#555; font-size:14px; margin-top:6px; }
+.inc-card .inc-meta { color:#999; font-size:12px; margin-top:6px; }
+
+/* STAT BOX */
+.stat-row { display:flex; gap:14px; margin-bottom:20px; flex-wrap:wrap; }
+.stat-box {
+    flex:1; min-width:120px; background:white; border-radius:10px; padding:12px 16px;
+    text-align:center; box-shadow:0 1px 4px rgba(0,0,0,0.06); border-top:3px solid var(--orange);
+}
+.stat-box .stat-val { font-size:24px; font-weight:800; color:var(--dark); }
+.stat-box .stat-lbl { font-size:10px; color:var(--text-light); text-transform:uppercase; }
+
+/* LOADING */
+.loading { text-align:center; padding:40px; color:var(--text-light); }
+.spinner { display:inline-block; width:30px; height:30px; border:3px solid #eee; border-top-color:var(--orange); border-radius:50%; animation:spin 0.8s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* STATUS */
+.status-bar { display:flex; justify-content:space-between; align-items:center; padding:8px 0; color:var(--text-light); font-size:12px; }
+.status-dot { display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--green); margin-right:6px; }
+
+/* FOOTER */
+.footer { text-align:center; padding:20px 0; margin-top:30px; border-top:1px solid #eee; color:#bbb; font-size:12px; }
+
+/* RESPONSIVE */
+@media (max-width:768px) {
+    .sidebar { display:none; }
+    .main { margin-left:0; padding:16px; }
+    .metrics { flex-direction:column; }
+}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+    <div class="sidebar-logo">
+        <img src="gaston.png" alt="Gaston">
+        <h3>Gaston</h3>
+        <p>Gestor de Incidencias</p>
+    </div>
+    <div class="sidebar-nav">
+        <button class="active" onclick="showView('dashboard')">Dashboard</button>
+        <button onclick="showView('proyecto')">Por Proyecto</button>
+        <button onclick="showView('marta')">Atencion Marta</button>
+        <button onclick="showView('todos')">Todos los emails</button>
+    </div>
+    <div class="sidebar-actions">
+        <button onclick="actualizar()">Actualizar ahora</button>
+        <button class="secondary" onclick="loadData()">Refrescar datos</button>
+    </div>
+    <div class="sidebar-time" id="lastUpdate">-</div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+    <div class="header">
+        <img src="gaston.png" alt="Gaston">
+        <div>
+            <h1>Gaston</h1>
+            <p>Gestor inteligente de incidencias Redmine</p>
+        </div>
+    </div>
+
+    <div id="content">
+        <div class="loading"><div class="spinner"></div><p style="margin-top:12px">Cargando datos...</p></div>
+    </div>
+
+    <div class="footer">Gaston v2.0 - Gestor de incidencias Redmine</div>
+</div>
+
+<script>
+const API_BASE = "https://1gijxxhl76.execute-api.eu-west-1.amazonaws.com/prod/gaston";
+let allEmails = [];
+let currentView = "dashboard";
+
+// ============= DATA =============
+async function loadData() {
+    try {
+        const resp = await fetch(`${API_BASE}/emails`);
+        allEmails = await resp.json();
+        if (!Array.isArray(allEmails)) allEmails = [];
+        allEmails.sort((a,b) => (b.timestamp||"").localeCompare(a.timestamp||""));
+        document.getElementById("lastUpdate").textContent = `Actualizado: ${new Date().toLocaleTimeString("es-ES")}`;
+        renderView();
+    } catch(e) {
+        document.getElementById("content").innerHTML = `<div class="loading" style="color:var(--red)">Error conectando con la API</div>`;
+    }
+}
+
+async function actualizar() {
+    const btn = event.target;
+    btn.textContent = "Procesando...";
+    btn.disabled = true;
+    try {
+        const resp = await fetch(`${API_BASE}/actualizar`, {method:"POST"});
+        const data = await resp.json();
+        alert(`Listo! Procesados ${data.procesados || 0} emails nuevos.`);
+        await loadData();
+    } catch(e) {
+        alert("Error al actualizar. Intenta de nuevo.");
+    }
+    btn.textContent = "Actualizar ahora";
+    btn.disabled = false;
+}
+
+// ============= HELPERS =============
+function fmtDate(ts) {
+    if (!ts) return "-";
+    try { const d = new Date(ts); return d.toLocaleDateString("es-ES",{day:"2-digit",month:"2-digit"}) + " " + d.toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"}); }
+    catch(e) { return ts.substring(0,16); }
+}
+
+function pill(tipo) {
+    const cls = tipo === "MUY_URGENTE" ? "pill-muy" : tipo === "URGENTE" ? "pill-urgente" : "pill-informativo";
+    return `<span class="pill ${cls}">${tipo}</span>`;
+}
+
+function clean(val) {
+    const na = ["N/A","No especificado","No identificado","No identificada","No aplica","no identificado"];
+    return (!val || na.includes(val)) ? "" : val;
+}
+
+function filterByDays(emails, days) {
+    const since = new Date(); since.setDate(since.getDate() - days);
+    return emails.filter(e => { try { return new Date(e.timestamp) >= since; } catch(x) { return false; } });
+}
+
+function getProyectos(emails) {
+    const p = {};
+    emails.forEach(e => { const k = clean(e.proyecto); if(k) { if(!p[k]) p[k]=[]; p[k].push(e); } });
+    return p;
+}
+
+// ============= VIEWS =============
+function showView(view) {
+    currentView = view;
+    document.querySelectorAll(".sidebar-nav button").forEach(b => b.classList.remove("active"));
+    event.target.classList.add("active");
+    renderView();
+}
+
+function renderView() {
+    const c = document.getElementById("content");
+    if (currentView === "dashboard") c.innerHTML = renderDashboard();
+    else if (currentView === "proyecto") c.innerHTML = renderProyecto();
+    else if (currentView === "marta") c.innerHTML = renderMarta();
+    else if (currentView === "todos") c.innerHTML = renderTodos();
+}
+
+// DASHBOARD
+function renderDashboard() {
+    const emails = filterByDays(allEmails, 7);
+    const urgentes = emails.filter(e => e.clasificacion === "URGENTE" || e.clasificacion === "MUY_URGENTE");
+    const informativos = emails.filter(e => e.clasificacion === "INFORMATIVO");
+    const hoy = new Date().toISOString().substring(0,10);
+    const hoyEmails = emails.filter(e => (e.timestamp||"").startsWith(hoy));
+
+    // Proyectos activos
+    const proys = getProyectos(emails);
+    let proyHtml = Object.entries(proys).sort((a,b)=>b[1].length-a[1].length).slice(0,5)
+        .map(([p,e]) => `<div class="stat-box"><div class="stat-val">${e.length}</div><div class="stat-lbl">${p}</div></div>`).join("");
+
+    // Urgentes
+    let urgHtml = urgentes.slice(0,5).map(e => `
+        <div class="alert-row">
+            <strong>#${clean(e.numero_incidencia)||"?"}</strong> ${pill(e.clasificacion)}
+            &middot; <em>${clean(e.proyecto)||"?"}</em>
+            &middot; <span style="color:#999;font-size:12px">${fmtDate(e.timestamp)}</span>
+            <br><span style="color:#555;margin-top:4px;display:block">${e.resumen||""}</span>
+        </div>`).join("");
+
+    // Ultimos
+    let lastHtml = emails.slice(0,12).map(e => `
+        <div style="padding:4px 0;font-size:13px">
+            <code style="color:#999">${fmtDate(e.timestamp)}</code>
+            ${pill(e.clasificacion)}
+            ${clean(e.numero_incidencia) ? `<strong>#${clean(e.numero_incidencia)}</strong>` : ""}
+            ${clean(e.proyecto) ? `<em>${clean(e.proyecto)}</em>` : ""} -
+            ${(e.resumen||"").substring(0,70)}
+        </div>`).join("");
+
+    return `
+        <div class="metrics">
+            <div class="metric"><div class="val">${emails.length}</div><div class="lbl">Ultimos 7 dias</div></div>
+            <div class="metric red"><div class="val">${urgentes.length}</div><div class="lbl">Urgentes</div></div>
+            <div class="metric green"><div class="val">${informativos.length}</div><div class="lbl">Archivados</div></div>
+            <div class="metric blue"><div class="val">${hoyEmails.length}</div><div class="lbl">Hoy</div></div>
+            <div class="metric amber"><div class="val">${Object.keys(proys).length}</div><div class="lbl">Proyectos</div></div>
+        </div>
+        ${proyHtml ? `<div class="section-title">Proyectos activos</div><div class="stat-row">${proyHtml}</div>` : ""}
+        ${urgHtml ? `<div class="section-title">Urgentes</div>${urgHtml}` : ""}
+        <div class="section-title">Ultimos emails (7 dias)</div>${lastHtml || "<p>Sin emails</p>"}
+    `;
+}
+
+// POR PROYECTO
+function renderProyecto() {
+    const proys = getProyectos(allEmails);
+    const keys = Object.keys(proys).sort();
+    if (!keys.length) return `<p>No hay proyectos.</p>`;
+
+    let options = keys.map(k => `<option value="${k}">${k}</option>`).join("");
+    let html = `
+        <div class="filters">
+            <input type="text" id="proySearch" placeholder="Buscar proyecto..." oninput="filterProyectos()">
+            <select id="proySelect" onchange="renderProyectoDetail()">
+                ${options}
+            </select>
+        </div>
+        <div id="proyDetail"></div>
+    `;
+    setTimeout(() => renderProyectoDetail(), 0);
+    return html;
+}
+
+function filterProyectos() {
+    const search = document.getElementById("proySearch").value.toLowerCase();
+    const sel = document.getElementById("proySelect");
+    const proys = getProyectos(allEmails);
+    const keys = Object.keys(proys).sort().filter(k => k.toLowerCase().includes(search));
+    sel.innerHTML = keys.map(k => `<option value="${k}">${k}</option>`).join("");
+    renderProyectoDetail();
+}
+
+function renderProyectoDetail() {
+    const sel = document.getElementById("proySelect");
+    const det = document.getElementById("proyDetail");
+    if (!sel || !det || !sel.value) { if(det) det.innerHTML = ""; return; }
+
+    const proys = getProyectos(allEmails);
+    const emails = proys[sel.value] || [];
+    const urgCount = emails.filter(e => e.clasificacion === "URGENTE" || e.clasificacion === "MUY_URGENTE").length;
+
+    // Agrupar por incidencia
+    const incs = {};
+    emails.forEach(e => {
+        const k = clean(e.numero_incidencia) || "sin-numero";
+        if (!incs[k]) incs[k] = [];
+        incs[k].push(e);
+    });
+
+    let statsHtml = `
+        <div class="stat-row">
+            <div class="stat-box"><div class="stat-val">${emails.length}</div><div class="stat-lbl">Emails</div></div>
+            <div class="stat-box"><div class="stat-val">${Object.keys(incs).length}</div><div class="stat-lbl">Incidencias</div></div>
+            <div class="stat-box"><div class="stat-val">${urgCount}</div><div class="stat-lbl">Requieren atencion</div></div>
+            <div class="stat-box"><div class="stat-val" style="font-size:14px">${fmtDate(emails[0]?.timestamp)}</div><div class="stat-lbl">Ultima actividad</div></div>
+        </div>
+    `;
+
+    let cardsHtml = Object.entries(incs)
+        .sort((a,b) => (b[1][0]?.timestamp||"").localeCompare(a[1][0]?.timestamp||""))
+        .map(([num, list]) => {
+            const last = list[0];
+            const tipo = (last.clasificacion||"").toLowerCase();
+            return `
+                <div class="inc-card ${tipo}">
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <span class="inc-num">#${num}</span>
+                        ${pill(last.clasificacion||"")}
+                    </div>
+                    <div class="inc-resumen">${last.resumen||"-"}</div>
+                    <div class="inc-meta">${fmtDate(last.timestamp)} | ${list.length} email${list.length>1?"s":""}</div>
+                </div>`;
+        }).join("");
+
+    det.innerHTML = statsHtml + cardsHtml;
+}
+
+// ATENCION MARTA
+function renderMarta() {
+    const importantes = allEmails.filter(e => e.clasificacion === "URGENTE" || e.clasificacion === "MUY_URGENTE");
+    if (!importantes.length) return `<div style="background:#d4edda;padding:16px;border-radius:8px;color:#155724">Sin emails pendientes. Todo gestionado por Gaston.</div>`;
+
+    const muy = importantes.filter(e => e.clasificacion === "MUY_URGENTE").length;
+    const urg = importantes.filter(e => e.clasificacion === "URGENTE").length;
+
+    let statsHtml = `
+        <div class="stat-row">
+            <div class="stat-box" style="border-top-color:var(--darkred)"><div class="stat-val">${muy}</div><div class="stat-lbl">Muy urgentes</div></div>
+            <div class="stat-box" style="border-top-color:var(--red)"><div class="stat-val">${urg}</div><div class="stat-lbl">Urgentes</div></div>
+        </div>
+    `;
+
+    let rows = importantes.map(e => `
+        <div class="alert-row">
+            <strong>#${clean(e.numero_incidencia)||"?"}</strong>
+            ${pill(e.clasificacion)}
+            &middot; <em>${clean(e.proyecto)||"-"}</em>
+            &middot; <span style="color:#999;font-size:12px">${fmtDate(e.timestamp)}</span>
+            <br><span style="color:#444;margin-top:4px;display:block">${e.resumen||""}</span>
+            <span style="color:#aaa;font-size:12px">De: ${(e.remitente||"").substring(0,50)}</span>
+        </div>`).join("");
+
+    return `<div class="section-title">Requiere atencion de Marta</div>${statsHtml}${rows}`;
+}
+
+// TODOS LOS EMAILS
+function renderTodos() {
+    let clasifOptions = [...new Set(allEmails.map(e=>e.clasificacion||""))].sort().map(c=>`<option value="${c}">${c}</option>`).join("");
+    let proyOptions = [...new Set(allEmails.map(e=>clean(e.proyecto)||"Sin proyecto").filter(Boolean))].sort().map(p=>`<option value="${p}">${p}</option>`).join("");
+
+    return `
+        <div class="section-title">Registro completo</div>
+        <div class="filters">
+            <select id="filtClasif" onchange="renderTodosTable()"><option value="">Todas las clasificaciones</option>${clasifOptions}</select>
+            <select id="filtProy" onchange="renderTodosTable()"><option value="">Todos los proyectos</option>${proyOptions}</select>
+            <input type="text" id="filtBuscar" placeholder="Buscar..." oninput="renderTodosTable()">
+        </div>
+        <div id="todosTable"></div>
+    `;
+    setTimeout(() => renderTodosTable(), 0);
+}
+
+function renderTodosTable() {
+    const clasif = document.getElementById("filtClasif")?.value || "";
+    const proy = document.getElementById("filtProy")?.value || "";
+    const buscar = (document.getElementById("filtBuscar")?.value || "").toLowerCase();
+    const container = document.getElementById("todosTable");
+    if (!container) return;
+
+    let filtered = allEmails;
+    if (clasif) filtered = filtered.filter(e => e.clasificacion === clasif);
+    if (proy) filtered = filtered.filter(e => (clean(e.proyecto)||"Sin proyecto") === proy);
+    if (buscar) filtered = filtered.filter(e =>
+        (e.asunto||"").toLowerCase().includes(buscar) ||
+        (e.resumen||"").toLowerCase().includes(buscar) ||
+        (e.numero_incidencia||"").toLowerCase().includes(buscar) ||
+        (e.proyecto||"").toLowerCase().includes(buscar)
+    );
+
+    let rows = filtered.slice(0,100).map(e => `
+        <tr>
+            <td>${fmtDate(e.timestamp)}</td>
+            <td>${pill(e.clasificacion||"")}</td>
+            <td>${clean(e.numero_incidencia)||"-"}</td>
+            <td>${clean(e.proyecto)||"-"}</td>
+            <td>${clean(e.estado_redmine)||"-"}</td>
+            <td>${(e.resumen||"").substring(0,80)}</td>
+        </tr>`).join("");
+
+    container.innerHTML = `
+        <p style="color:var(--text-light);font-size:12px;margin-bottom:8px">Mostrando ${Math.min(filtered.length,100)} de ${filtered.length} emails</p>
+        <table class="data-table">
+            <thead><tr><th>Fecha</th><th>Clasif.</th><th>#</th><th>Proyecto</th><th>Estado</th><th>Resumen</th></tr></thead>
+            <tbody>${rows || "<tr><td colspan='6'>Sin resultados</td></tr>"}</tbody>
+        </table>
+    `;
+}
+
+// ============= INIT =============
+loadData();
+// Auto-refresh cada 60 segundos
+setInterval(loadData, 60000);
+
+// Inicializar tabla de "todos" cuando se cambia a esa vista
+const origShowView = showView;
+function showView(view) {
+    currentView = view;
+    document.querySelectorAll(".sidebar-nav button").forEach(b => b.classList.remove("active"));
+    event.target.classList.add("active");
+    renderView();
+    if (view === "todos") setTimeout(() => renderTodosTable(), 50);
+}
+</script>
+</body>
+</html>

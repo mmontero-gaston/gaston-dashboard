@@ -105,6 +105,12 @@ Resources:
             Path: /gaston/resumen
             Method: get
             RestApiId: !Ref GastonApi
+        DashboardActualizar:
+          Type: Api
+          Properties:
+            Path: /gaston/actualizar
+            Method: post
+            RestApiId: !Ref GastonApi
         # Cron diario 8 AM CET (7 AM UTC): clasifica emails + envia resumen a Telegram
         GastonCronDiario:
           Type: Schedule
