@@ -222,6 +222,12 @@ def mover_tarjeta(card_id: str, lista_destino_id: str) -> bool:
     return result is not None
 
 
+def comentar_tarjeta(card_id: str, texto: str) -> bool:
+    """Añade un comentario a una tarjeta."""
+    result = _request("POST", f"cards/{card_id}/actions/comments", {"text": texto})
+    return result is not None
+
+
 # ============= RESOLVER NOMBRES =============
 
 def resolver_tablero(nombre: str) -> Optional[str]:
@@ -295,32 +301,64 @@ def _get_list_name(list_id: str, board_id: str) -> str:
 def procesar_comando_trello(texto: str) -> str:
     """
     Procesa un comando de Marta para mover tarjetas en Trello.
-    Ejemplo: "mueve #61873 y #62311 a Pdte Probar Negocio en PRE"
+    Acepta lenguaje natural. Ejemplos:
+    - "mueve #61873 a Pdte Probar Negocio en PRE"
+    - "busca #48693 en SHERE KHAN - PRE y muevelo a PNDTE PROBAR NEGOCIO"
+    - "pasa #61873 y #62311 a Probado OK en PRO"
 
     Retorna un mensaje de respuesta para Telegram.
     """
     import re
 
     # Extraer numeros de incidencia
-    numeros = re.findall(r"#(\d+)", texto)
+    numeros = re.findall(r"#\s*(\d{3,})", texto)
     if not numeros:
         return "No encontre numeros de incidencia en tu mensaje. Usa el formato #XXXXX."
 
-    # Extraer tablero (buscar "en PRE", "en PRO", "en NEGOCIO", etc.)
-    tablero_match = re.search(r"(?:en|de|del?)\s+(PRE|PRO|NEGOCIO|SMEE|PREPRODUCCION|PRODUCCION)", texto, re.IGNORECASE)
+    # Extraer tablero - buscar variantes flexibles
     tablero_id = None
     tablero_nombre = ""
+    # Primero buscar nombre completo "SHERE KHAN - PRE/PRO/NEGOCIO"
+    tablero_match = re.search(r"SHERE\s*KHAN\s*[-–]\s*(PRE|PRO|NEGOCIO)", texto, re.IGNORECASE)
     if tablero_match:
-        tablero_key = ALIAS_TABLEROS.get(tablero_match.group(1).upper(), tablero_match.group(1).upper())
-        tablero_id = TODOS_LOS_TABLEROS.get(tablero_key)
+        tablero_key = tablero_match.group(1).upper()
+        tablero_id = TABLEROS_PRINCIPALES.get(tablero_key)
         tablero_nombre = tablero_key
+    else:
+        # Buscar "en PRE", "tablero PRE", "de PRE", etc.
+        tablero_match = re.search(
+            r"(?:en(?:\s+el)?|del?|tablero)\s+(PRE|PRO|NEGOCIO|SMEE|PREPRODUCCION|PRODUCCION)\b",
+            texto, re.IGNORECASE
+        )
+        if tablero_match:
+            tablero_key = ALIAS_TABLEROS.get(tablero_match.group(1).upper(), tablero_match.group(1).upper())
+            tablero_id = TODOS_LOS_TABLEROS.get(tablero_key)
+            tablero_nombre = tablero_key
 
-    # Extraer lista destino (buscar "a XXXX")
-    lista_match = re.search(r"(?:a|al?|hacia)\s+(.+?)(?:\s+en\s+|\s*$)", texto, re.IGNORECASE)
+    # Extraer lista destino - buscar variantes flexibles
+    # "a la columna XXXX", "al estado XXXX", "a XXXX", "muevas a XXXX", "hacia XXXX"
+    lista_match = re.search(
+        r"(?:a\s+la\s+columna|al?\s+estado|muev[ae]\w*\s+a|a\s+la\s+lista|hacia|a)\s+(.+?)(?:\s+(?:en|del?|tablero|añad|con\s+fecha|SHERE)\b|\s*$)",
+        texto, re.IGNORECASE
+    )
     if not lista_match:
-        return "No entendi a que lista quieres mover las tarjetas. Ejemplo: 'mueve #61873 a Pdte Probar Negocio en PRE'"
+        # Intentar buscar "columna XXXX" sin "a"
+        lista_match = re.search(r"columna\s+(.+?)(?:\s+(?:en|del?|añad|con)\b|\s*$)", texto, re.IGNORECASE)
+
+    if not lista_match:
+        return (
+            "No entendi a que lista quieres mover las tarjetas.\n\n"
+            "Ejemplo: mueve #61873 a Pdte Probar Negocio en PRE\n\n"
+            "Listas disponibles en PRE: " + ", ".join(listar_listas_tablero(TABLEROS_PRINCIPALES["PRE"])[:6])
+        )
 
     lista_nombre = lista_match.group(1).strip()
+    # Limpiar palabras sueltas que se hayan colado
+    lista_nombre = re.sub(r"\s+(y|e|lo|la|las|los|el)\s*$", "", lista_nombre, flags=re.IGNORECASE)
+
+    # Extraer fecha si la menciona (para añadir como comentario)
+    fecha_match = re.search(r"(\d{1,2}\s+de\s+\w+|\d{1,2}/\d{1,2}/\d{2,4}|\d{1,2}-\d{1,2}-\d{2,4})", texto, re.IGNORECASE)
+    fecha_texto = fecha_match.group(1) if fecha_match else ""
 
     # Procesar cada tarjeta
     resultados = []
@@ -353,6 +391,9 @@ def procesar_comando_trello(texto: str) -> str:
             resultados.append(
                 f"#{numero} -> {lista_destino_nombre} ({_get_board_name(board_id)})"
             )
+            # Si hay fecha, añadir como comentario
+            if fecha_texto:
+                comentar_tarjeta(tarjeta["card_id"], f"Movida por Gaston - Fecha: {fecha_texto}")
         else:
             errores.append(f"#{numero}: error al mover en Trello")
 

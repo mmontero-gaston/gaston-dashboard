@@ -244,10 +244,17 @@ def _handle_telegram(event):
         enviar_resumen_diario(chat_id, emails_24h)
         return _ok()
 
-    # Comando Trello - mover tarjetas (detecta "mueve", "mover", "muéveme", "pasa")
+    # Comando Trello - detecta cualquier mensaje con #XXXXX + palabras de accion sobre Trello
     import re
     text_lower = text.lower().strip()
-    if re.search(r"(mueve|mover|muéveme|mueveme|pasa|pasar|mover)\b", text_lower) and re.search(r"#\d+", text):
+    tiene_incidencia = bool(re.search(r"#\d{3,}", text))
+    palabras_trello = bool(re.search(
+        r"(mueve|mover|muéveme|mueveme|pasa|pasar|ubica|ubicar|"
+        r"cambia|cambiar|pon|poner|lleva|llevar|traslada|trasladar|"
+        r"trello|tablero|tarjeta|lista|columna|estado)",
+        text_lower
+    ))
+    if tiene_incidencia and palabras_trello:
         from trello_client import procesar_comando_trello
         respuesta = procesar_comando_trello(text)
         send_message(chat_id, respuesta)
